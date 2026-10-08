@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>LogPad</title>
+    <link rel="stylesheet" href="styles.css?v=15" />
+  </head>
+  <body>
+    <main class="app">
+      <header class="app-header">
+        <h1>LogPad <span class="mark">GEESE</span></h1>
+      </header>
+
+      <section class="composer" aria-label="New entry">
+        <textarea
+          id="editor"
+          class="editor"
+          rows="5"
+          aria-label="Write an entry"
+          placeholder="Write an entry…"
+        ></textarea>
+
+        <div class="composer-actions">
+          <p id="edit-status" class="edit-status" hidden>Editing saved entry</p>
+          <div class="action-buttons">
+            <button type="button" id="cancel-button" class="cancel-button" hidden>Cancel</button>
+            <button
+              type="button"
+              id="log-button"
+              class="log-button"
+              title="Log (⌘↩ or Ctrl+Enter)"
+            >
+              Log
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <section class="log" aria-label="Log">
+        <div class="log-header">
+          <h2>Log</h2>
+          <div class="log-actions">
+            <button type="button" id="import-button" class="save-button">Import log</button>
+            <button type="button" id="save-button" class="save-button">Export log</button>
+            <button type="button" id="clear-button" class="save-button clear-button">Clear log</button>
+          </div>
+          <input id="import-input" type="file" accept=".txt,text/plain" hidden />
+        </div>
+        <div id="clear-warning" class="clear-warning" hidden>
+          <p>Delete every entry? This cannot be undone.</p>
+          <div class="clear-warning-actions">
+            <button type="button" id="clear-cancel" class="save-button">Cancel</button>
+            <button type="button" id="clear-confirm" class="save-button clear-button">Delete all</button>
+          </div>
+        </div>
+        <p id="save-status" class="save-status" hidden></p>
+        <ol id="entry-list" class="entry-list" reversed></ol>
+        <p id="empty-state" class="empty-state">No entries yet.</p>
+      </section>
+    </main>
+
+    <script src="app.js?v=13"></script>
+  </body>
+</html>
