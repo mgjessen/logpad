@@ -115,43 +115,47 @@ function renderEntries(entries) {
     time.dateTime = entry.createdAt;
     time.textContent = formatTimestamp(entry.createdAt);
 
-    const actions = document.createElement("div");
-    actions.className = "entry-actions";
+    const showDelete = entry.id === editingId || entry.id === pendingDeleteId;
+    let actions = null;
+    if (showDelete) {
+      actions = document.createElement("div");
+      actions.className = "entry-actions";
 
-    if (entry.id === pendingDeleteId) {
-      const note = document.createElement("p");
-      note.className = "entry-confirm-note";
-      note.textContent = "Delete this entry?";
+      if (entry.id === pendingDeleteId) {
+        const note = document.createElement("p");
+        note.className = "entry-confirm-note";
+        note.textContent = "Delete this entry?";
 
-      const cancel = document.createElement("button");
-      cancel.type = "button";
-      cancel.className = "save-button";
-      cancel.textContent = "Cancel";
-      cancel.addEventListener("click", (event) => {
-        event.stopPropagation();
-        cancelDelete();
-      });
+        const cancel = document.createElement("button");
+        cancel.type = "button";
+        cancel.className = "save-button";
+        cancel.textContent = "Cancel";
+        cancel.addEventListener("click", (event) => {
+          event.stopPropagation();
+          cancelDelete();
+        });
 
-      const confirm = document.createElement("button");
-      confirm.type = "button";
-      confirm.className = "save-button clear-button";
-      confirm.textContent = "Delete";
-      confirm.addEventListener("click", (event) => {
-        event.stopPropagation();
-        confirmDeleteEntry(entry.id);
-      });
+        const confirm = document.createElement("button");
+        confirm.type = "button";
+        confirm.className = "save-button clear-button";
+        confirm.textContent = "Delete";
+        confirm.addEventListener("click", (event) => {
+          event.stopPropagation();
+          confirmDeleteEntry(entry.id);
+        });
 
-      actions.append(note, cancel, confirm);
-    } else {
-      const remove = document.createElement("button");
-      remove.type = "button";
-      remove.className = "entry-delete";
-      remove.textContent = "Delete";
-      remove.addEventListener("click", (event) => {
-        event.stopPropagation();
-        askDeleteEntry(entry.id);
-      });
-      actions.append(remove);
+        actions.append(note, cancel, confirm);
+      } else {
+        const remove = document.createElement("button");
+        remove.type = "button";
+        remove.className = "entry-delete";
+        remove.textContent = "Delete";
+        remove.addEventListener("click", (event) => {
+          event.stopPropagation();
+          askDeleteEntry(entry.id);
+        });
+        actions.append(remove);
+      }
     }
 
     const body = document.createElement("div");
@@ -166,7 +170,10 @@ function renderEntries(entries) {
         beginEdit(entry.id);
       }
     });
-    item.append(actions, main);
+    if (actions) {
+      item.append(actions);
+    }
+    item.append(main);
     entryList.append(item);
   }
 
@@ -431,6 +438,9 @@ function beginEdit(id) {
   }
 
   editingId = id;
+  if (pendingDeleteId !== id) {
+    pendingDeleteId = null;
+  }
   editor.value = htmlToText(entry.html);
   setEditing(true);
   renderEntries(withIds(loadEntries()));
@@ -440,6 +450,7 @@ function beginEdit(id) {
 
 function endEdit() {
   editingId = null;
+  pendingDeleteId = null;
   editor.value = "";
   setEditing(false);
 }

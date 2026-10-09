@@ -257,11 +257,13 @@ h2 {
 
 .entry-main {
   cursor: pointer;
+}
+
+.entry.is-editing:not(.is-confirming) .entry-main {
   padding-right: 4.25rem;
 }
 
 .entry.is-confirming .entry-main {
-  padding-right: 0;
   padding-top: 1.7rem;
 }
 
