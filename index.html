@@ -8,7 +8,7 @@
     <link rel="apple-touch-icon" href="apple-touch-icon.png" />
     <link rel="manifest" href="manifest.json" />
     <meta name="apple-mobile-web-app-title" content="LogPad" />
-    <link rel="stylesheet" href="styles.css?v=18" />
+    <link rel="stylesheet" href="styles.css?v=19" />
   </head>
   <body>
     <main class="app">
@@ -73,8 +73,10 @@
           </div>
         </div>
         <p id="save-status" class="save-status" hidden></p>
-        <ol id="entry-list" class="entry-list" reversed></ol>
-        <p id="empty-state" class="empty-state">No entries yet.</p>
+        <div class="log-scroll">
+          <ol id="entry-list" class="entry-list" reversed></ol>
+          <p id="empty-state" class="empty-state">No entries yet.</p>
+        </div>
       </section>
     </main>
 
