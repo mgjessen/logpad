@@ -4,7 +4,11 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>LogPad</title>
-    <link rel="stylesheet" href="styles.css?v=15" />
+    <link rel="icon" href="icon.png" type="image/png" />
+    <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+    <link rel="manifest" href="manifest.json" />
+    <meta name="apple-mobile-web-app-title" content="LogPad" />
+    <link rel="stylesheet" href="styles.css?v=17" />
   </head>
   <body>
     <main class="app">
@@ -16,7 +20,7 @@
         <textarea
           id="editor"
           class="editor"
-          rows="5"
+          rows="4"
           aria-label="Write an entry"
           placeholder="Write an entry…"
         ></textarea>
@@ -39,11 +43,18 @@
 
       <section class="log" aria-label="Log">
         <div class="log-header">
-          <h2>Log</h2>
           <div class="log-actions">
-            <button type="button" id="import-button" class="save-button">Import log</button>
-            <button type="button" id="save-button" class="save-button">Export log</button>
-            <button type="button" id="clear-button" class="save-button clear-button">Clear log</button>
+            <button type="button" id="import-button" class="save-button">Import</button>
+            <button type="button" id="save-button" class="save-button">Export</button>
+            <button
+              type="button"
+              id="chrono-button"
+              class="save-button"
+              title="Export with the newest entry at the bottom"
+            >
+              Chronological
+            </button>
+            <button type="button" id="clear-button" class="save-button clear-button">Clear</button>
           </div>
           <input id="import-input" type="file" accept=".txt,text/plain" hidden />
         </div>
@@ -60,6 +71,6 @@
       </section>
     </main>
 
-    <script src="app.js?v=13"></script>
+    <script src="app.js?v=16"></script>
   </body>
 </html>

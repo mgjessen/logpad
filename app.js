@@ -6,6 +6,7 @@ const logButton = document.getElementById("log-button");
 const cancelButton = document.getElementById("cancel-button");
 const editStatus = document.getElementById("edit-status");
 const saveButton = document.getElementById("save-button");
+const chronoButton = document.getElementById("chrono-button");
 const importButton = document.getElementById("import-button");
 const importInput = document.getElementById("import-input");
 const clearButton = document.getElementById("clear-button");
@@ -17,6 +18,7 @@ const entryList = document.getElementById("entry-list");
 const emptyState = document.getElementById("empty-state");
 
 let editingId = null;
+let pendingDeleteId = null;
 
 function loadEntries() {
   try {
@@ -86,35 +88,85 @@ function formatTimestamp(iso) {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
 }
 
+function byNewest(entries) {
+  return [...entries].sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
+}
+
 function renderEntries(entries) {
   entryList.replaceChildren();
 
-  for (const entry of entries) {
+  for (const entry of byNewest(entries)) {
     const item = document.createElement("li");
     item.className = "entry";
-    item.tabIndex = 0;
-    item.setAttribute("role", "button");
-    item.setAttribute("aria-label", `Edit entry from ${formatTimestamp(entry.createdAt)}`);
     if (entry.id === editingId) {
       item.classList.add("is-editing");
     }
+    if (entry.id === pendingDeleteId) {
+      item.classList.add("is-confirming");
+    }
+
+    const main = document.createElement("div");
+    main.className = "entry-main";
+    main.tabIndex = 0;
+    main.setAttribute("role", "button");
+    main.setAttribute("aria-label", `Edit entry from ${formatTimestamp(entry.createdAt)}`);
 
     const time = document.createElement("time");
     time.dateTime = entry.createdAt;
     time.textContent = formatTimestamp(entry.createdAt);
 
+    const actions = document.createElement("div");
+    actions.className = "entry-actions";
+
+    if (entry.id === pendingDeleteId) {
+      const note = document.createElement("p");
+      note.className = "entry-confirm-note";
+      note.textContent = "Delete this entry?";
+
+      const cancel = document.createElement("button");
+      cancel.type = "button";
+      cancel.className = "save-button";
+      cancel.textContent = "Cancel";
+      cancel.addEventListener("click", (event) => {
+        event.stopPropagation();
+        cancelDelete();
+      });
+
+      const confirm = document.createElement("button");
+      confirm.type = "button";
+      confirm.className = "save-button clear-button";
+      confirm.textContent = "Delete";
+      confirm.addEventListener("click", (event) => {
+        event.stopPropagation();
+        confirmDeleteEntry(entry.id);
+      });
+
+      actions.append(note, cancel, confirm);
+    } else {
+      const remove = document.createElement("button");
+      remove.type = "button";
+      remove.className = "entry-delete";
+      remove.textContent = "Delete";
+      remove.addEventListener("click", (event) => {
+        event.stopPropagation();
+        askDeleteEntry(entry.id);
+      });
+      actions.append(remove);
+    }
+
     const body = document.createElement("div");
     body.className = "entry-body";
     body.textContent = htmlToText(entry.html);
 
-    item.append(time, body);
-    item.addEventListener("click", () => beginEdit(entry.id));
-    item.addEventListener("keydown", (event) => {
+    main.append(time, body);
+    main.addEventListener("click", () => beginEdit(entry.id));
+    main.addEventListener("keydown", (event) => {
       if ((event.key === "Enter" || event.key === " ") && !event.metaKey && !event.ctrlKey) {
         event.preventDefault();
         beginEdit(entry.id);
       }
     });
+    item.append(actions, main);
     entryList.append(item);
   }
 
@@ -221,9 +273,16 @@ function parseLogText(text) {
   return entry ? [entry] : [];
 }
 
+let saveStatusTimer = 0;
+
 function showSaveStatus(message) {
   saveStatus.hidden = false;
   saveStatus.textContent = message;
+  window.clearTimeout(saveStatusTimer);
+  saveStatusTimer = window.setTimeout(() => {
+    saveStatus.hidden = true;
+    saveStatus.textContent = "";
+  }, 5000);
 }
 
 function downloadTextFile(filename, text) {
@@ -249,8 +308,7 @@ function macBridge() {
   return window.webkit?.messageHandlers?.logpad ?? null;
 }
 
-function saveAsTextFile() {
-  const entries = loadEntries();
+function exportEntries(entries) {
   if (entries.length === 0) {
     showSaveStatus("Nothing to export yet. Write something and click Log first.");
     return;
@@ -268,6 +326,14 @@ function saveAsTextFile() {
   showSaveStatus(`Downloaded ${filename}. Check Downloads if it doesn't open.`);
 }
 
+function saveAsTextFile() {
+  exportEntries(byNewest(loadEntries()));
+}
+
+function saveChronological() {
+  exportEntries(byNewest(loadEntries()).reverse());
+}
+
 function applyImportedLog(text) {
   const imported = parseLogText(String(text || ""));
   if (imported.length === 0) {
@@ -282,10 +348,33 @@ function applyImportedLog(text) {
 }
 
 function replaceLog(entries, message) {
-  saveEntries(entries);
+  const ordered = byNewest(entries);
+  saveEntries(ordered);
   endEdit();
-  renderEntries(entries);
+  renderEntries(ordered);
   showSaveStatus(message);
+}
+
+function askDeleteEntry(id) {
+  pendingDeleteId = id;
+  hideClearWarning();
+  renderEntries(withIds(loadEntries()));
+}
+
+function cancelDelete() {
+  pendingDeleteId = null;
+  renderEntries(withIds(loadEntries()));
+}
+
+function confirmDeleteEntry(id) {
+  const entries = withIds(loadEntries()).filter((entry) => entry.id !== id);
+  pendingDeleteId = null;
+  if (editingId === id) {
+    endEdit();
+  }
+  saveEntries(entries);
+  renderEntries(entries);
+  showSaveStatus("Entry deleted.");
 }
 
 function showClearWarning() {
@@ -412,6 +501,7 @@ function submitEntry() {
 logButton.addEventListener("click", submitEntry);
 cancelButton.addEventListener("click", cancelEdit);
 saveButton.addEventListener("click", saveAsTextFile);
+chronoButton.addEventListener("click", saveChronological);
 importButton.addEventListener("click", () => {
   const bridge = macBridge();
   if (bridge) {
@@ -438,6 +528,11 @@ document.addEventListener("keydown", (event) => {
   if (event.key === "Escape" && !clearWarning.hidden) {
     event.preventDefault();
     hideClearWarning();
+    return;
+  }
+  if (event.key === "Escape" && pendingDeleteId) {
+    event.preventDefault();
+    cancelDelete();
     return;
   }
   if (event.key === "Escape" && editingId) {

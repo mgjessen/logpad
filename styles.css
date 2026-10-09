@@ -69,7 +69,7 @@ h2 {
 
 h1 {
   margin: 0;
-  font-size: 1.375rem;
+  font-size: 1.5125rem;
 }
 
 h2 {
@@ -97,7 +97,7 @@ h2 {
 
 .editor {
   width: 100%;
-  min-height: 7rem;
+  min-height: calc(7rem - 1.47em);
   padding: 0.7rem 0.75rem;
   border: 1px solid transparent;
   border-radius: 8px;
@@ -178,7 +178,7 @@ h2 {
 .log-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 0.75rem;
   margin-bottom: 0.55rem;
   padding: 0 0.15rem;
@@ -223,7 +223,9 @@ h2 {
 }
 
 @media (prefers-color-scheme: dark) {
-  .clear-button {
+  .clear-button,
+  .entry-delete,
+  .entry-confirm-note {
     color: #ff453a;
   }
 }
@@ -249,8 +251,59 @@ h2 {
 }
 
 .entry {
+  position: relative;
   padding: 0.75rem 0.9rem;
+}
+
+.entry-main {
   cursor: pointer;
+  padding-right: 4.25rem;
+}
+
+.entry.is-confirming .entry-main {
+  padding-right: 0;
+  padding-top: 1.7rem;
+}
+
+.entry-actions {
+  position: absolute;
+  top: 0.65rem;
+  right: 0.75rem;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.35rem;
+  max-width: calc(100% - 1.5rem);
+}
+
+.entry.is-confirming .entry-actions {
+  left: 0.75rem;
+}
+
+.entry-delete,
+.entry-confirm-note {
+  border: 0;
+  background: transparent;
+  color: #ff3b30;
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1.2;
+}
+
+.entry-delete {
+  cursor: pointer;
+  padding: 0;
+}
+
+.entry-confirm-note {
+  margin: 0;
+}
+
+.entry-actions .save-button {
+  min-height: 1.4rem;
+  padding: 0.1rem 0.55rem;
+  font-size: 0.75rem;
 }
 
 .entry:hover {
