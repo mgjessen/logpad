@@ -28,7 +28,7 @@ guard let rep = NSBitmapImageRep(
 
 NSGraphicsContext.saveGraphicsState()
 NSGraphicsContext.current = NSGraphicsContext(bitmapImageRep: rep)
-NSColor(deviceRed: 192 / 255, green: 192 / 255, blue: 192 / 255, alpha: 1).setFill()
+NSColor.clear.setFill()
 NSRect(x: 0, y: 0, width: side, height: side).fill()
 image.draw(
     in: NSRect(x: 0, y: 0, width: side, height: side),
