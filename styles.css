@@ -203,16 +203,21 @@ h2 {
   display: flex;
   flex: none;
   align-items: center;
-  justify-content: flex-end;
-  gap: 0.75rem;
   margin-bottom: 0.55rem;
   padding: 0 0.15rem;
 }
 
 .log-actions {
   display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  width: 100%;
+  gap: 0.75rem;
+}
+
+.log-actions-start {
+  display: flex;
   flex-wrap: wrap;
-  justify-content: flex-end;
   gap: 0.4rem;
 }
 
