@@ -15,8 +15,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler
 
         let webView = WKWebView(frame: .zero, configuration: configuration)
         webView.uiDelegate = self
-        let iconYellow = NSColor(srgbRed: 1, green: 208.0 / 255.0, blue: 0, alpha: 1)
-        webView.underPageBackgroundColor = iconYellow
         self.webView = webView
 
         let window = NSWindow(
