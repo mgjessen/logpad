@@ -19,6 +19,7 @@ cp "$root/styles.css" "$root/app.js" "$root/icon.png" "$app/Contents/Resources/"
 work="$(mktemp -d)"
 swiftc -O -o "$work/stamp-icon" "$root/mac/stamp-icon.swift" -framework Cocoa
 "$work/stamp-icon" "$root/icon.png" "$work/icon.png"
+cp "$work/icon.png" "$app/Contents/Resources/icon.png"
 
 iconset="$work/AppIcon.iconset"
 mkdir -p "$iconset"
