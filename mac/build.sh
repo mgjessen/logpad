@@ -13,8 +13,8 @@ swiftc -O -o "$app/Contents/MacOS/LogPad" "$root/mac/main.swift" \
 
 cp "$root/mac/Info.plist" "$app/Contents/Info.plist"
 printf 'APPL????' > "$app/Contents/PkgInfo"
-sed -E 's/(styles\.css|app\.js)\?v=[0-9]+/\1/g' "$root/index.html" > "$app/Contents/Resources/index.html"
-cp "$root/styles.css" "$root/app.js" "$root/icon.png" "$app/Contents/Resources/"
+sed -E 's/(styles\.css|app\.js|goose-head\.png)\?v=[0-9]+/\1/g' "$root/index.html" > "$app/Contents/Resources/index.html"
+cp "$root/styles.css" "$root/app.js" "$root/icon.png" "$root/goose-head.png" "$app/Contents/Resources/"
 
 work="$(mktemp -d)"
 swiftc -O -o "$work/stamp-icon" "$root/mac/stamp-icon.swift" -framework Cocoa
