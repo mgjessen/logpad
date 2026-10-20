@@ -7,6 +7,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler
     private var webView: WKWebView?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        installMainMenu()
+
         let contentController = WKUserContentController()
         contentController.add(self, name: "logpad")
 
@@ -60,6 +62,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler
         }
 
         switch action {
+        case "copy":
+            let text = body["text"] as? String ?? ""
+            let board = NSPasteboard.general
+            board.clearContents()
+            board.setString(text, forType: .string)
+        case "paste":
+            let text = NSPasteboard.general.string(forType: .string) ?? ""
+            webView?.evaluateJavaScript("insertPastedText(\(jsLiteral(text)))")
         case "export":
             let text = body["text"] as? String ?? ""
             let filename = body["filename"] as? String ?? "logpad.txt"
@@ -143,6 +153,30 @@ final class AppDelegate: NSObject, NSApplicationDelegate, WKScriptMessageHandler
         alert.beginSheetModal(for: window) { response in
             completionHandler(response == .alertFirstButtonReturn)
         }
+    }
+
+    private func installMainMenu() {
+        let main = NSMenu()
+
+        let appItem = NSMenuItem()
+        main.addItem(appItem)
+        let appMenu = NSMenu()
+        appItem.submenu = appMenu
+        appMenu.addItem(withTitle: "Quit LogPad", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
+
+        let editItem = NSMenuItem()
+        main.addItem(editItem)
+        let edit = NSMenu(title: "Edit")
+        editItem.submenu = edit
+        edit.addItem(withTitle: "Undo", action: Selector(("undo:")), keyEquivalent: "z")
+        edit.addItem(withTitle: "Redo", action: Selector(("redo:")), keyEquivalent: "Z")
+        edit.addItem(.separator())
+        edit.addItem(withTitle: "Cut", action: #selector(NSText.cut(_:)), keyEquivalent: "x")
+        edit.addItem(withTitle: "Copy", action: #selector(NSText.copy(_:)), keyEquivalent: "c")
+        edit.addItem(withTitle: "Paste", action: #selector(NSText.paste(_:)), keyEquivalent: "v")
+        edit.addItem(withTitle: "Select All", action: #selector(NSText.selectAll(_:)), keyEquivalent: "a")
+
+        NSApp.mainMenu = main
     }
 
     private func showStatus(_ message: String) {

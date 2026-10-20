@@ -531,7 +531,128 @@ importInput.addEventListener("change", () => {
 clearButton.addEventListener("click", showClearWarning);
 clearCancel.addEventListener("click", hideClearWarning);
 clearConfirm.addEventListener("click", confirmClearLog);
+let pendingPaste = null;
+
+function usesCommandClipboard() {
+  return /Mac|iPhone|iPad|iPod/.test(navigator.platform || "") || /Mac OS|iPhone|iPad/.test(navigator.userAgent);
+}
+
+function editableField(target) {
+  if (!(target instanceof HTMLTextAreaElement || target instanceof HTMLInputElement)) {
+    return null;
+  }
+  if (target.readOnly || target.disabled) {
+    return null;
+  }
+  const type = target.type;
+  if (type === "file" || type === "button" || type === "checkbox" || type === "radio" || type === "hidden") {
+    return null;
+  }
+  return target;
+}
+
+function copyWithExecCommand(text) {
+  const saved = document.activeElement;
+  const helper = document.createElement("textarea");
+  helper.value = text;
+  helper.setAttribute("readonly", "");
+  helper.style.position = "fixed";
+  helper.style.left = "-9999px";
+  document.body.append(helper);
+  helper.select();
+  document.execCommand("copy");
+  helper.remove();
+  if (saved instanceof HTMLElement) {
+    saved.focus();
+  }
+}
+
+function copyText(text) {
+  if (!text) {
+    return;
+  }
+  const bridge = macBridge();
+  if (bridge) {
+    bridge.postMessage({ action: "copy", text });
+    return;
+  }
+  const write = navigator.clipboard?.writeText?.(text);
+  if (write?.catch) {
+    write.catch(() => copyWithExecCommand(text));
+    return;
+  }
+  copyWithExecCommand(text);
+}
+
+function insertPastedText(text) {
+  if (typeof text !== "string" || text.length === 0) {
+    pendingPaste = null;
+    return;
+  }
+  const saved = pendingPaste;
+  pendingPaste = null;
+  const field = saved?.field && document.contains(saved.field) ? saved.field : editor;
+  const start = saved?.field === field ? saved.start : field.selectionStart ?? field.value.length;
+  const end = saved?.field === field ? saved.end : field.selectionEnd ?? start;
+  field.focus();
+  field.setSelectionRange(start, end);
+  const before = field.value;
+  if (!document.execCommand("insertText", false, text) || field.value === before) {
+    field.setRangeText(text, start, end, "end");
+  }
+}
+
+function pasteIntoField(field) {
+  pendingPaste = {
+    field,
+    start: field.selectionStart ?? field.value.length,
+    end: field.selectionEnd ?? field.selectionStart ?? field.value.length,
+  };
+  const bridge = macBridge();
+  if (bridge) {
+    bridge.postMessage({ action: "paste" });
+    return;
+  }
+  const read = navigator.clipboard?.readText?.();
+  if (read?.then) {
+    read.then((text) => insertPastedText(text)).catch(() => {
+      pendingPaste = null;
+    });
+  }
+}
+
+function handleClipboardShortcut(event) {
+  if (event.metaKey || event.altKey || !event.ctrlKey || !usesCommandClipboard()) {
+    return false;
+  }
+  const key = event.key.toLowerCase();
+  if (key !== "c" && key !== "v") {
+    return false;
+  }
+  const field = editableField(event.target);
+  if (key === "v") {
+    if (!field) {
+      return false;
+    }
+    event.preventDefault();
+    pasteIntoField(field);
+    return true;
+  }
+  const selected = field
+    ? field.value.slice(field.selectionStart ?? 0, field.selectionEnd ?? 0)
+    : window.getSelection()?.toString() ?? "";
+  if (!selected) {
+    return false;
+  }
+  event.preventDefault();
+  copyText(selected);
+  return true;
+}
+
 document.addEventListener("keydown", (event) => {
+  if (handleClipboardShortcut(event)) {
+    return;
+  }
   if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) {
     event.preventDefault();
     submitEntry();
