@@ -183,7 +183,29 @@ function renderEntries(entries) {
 function htmlToText(html) {
   const holder = document.createElement("div");
   holder.innerHTML = sanitizeHtml(html);
-  return holder.innerText.replace(/\u00a0/g, " ").trim();
+  const pieces = [];
+  const walk = (node) => {
+    node.childNodes.forEach((child) => {
+      if (child.nodeType === Node.TEXT_NODE) {
+        pieces.push(child.textContent.replace(/\u00a0/g, " "));
+        return;
+      }
+      if (child.nodeType !== Node.ELEMENT_NODE) {
+        return;
+      }
+      if (child.tagName === "BR") {
+        pieces.push("\n");
+        return;
+      }
+      const block = child.tagName === "P" || child.tagName === "DIV";
+      if (block && pieces.length > 0 && !pieces[pieces.length - 1].endsWith("\n")) {
+        pieces.push("\n");
+      }
+      walk(child);
+    });
+  };
+  walk(holder);
+  return pieces.join("").replace(/[ \t]+\n/g, "\n").replace(/^[ \t]+|[ \t]+$/g, "");
 }
 
 function entriesToText(entries) {
@@ -194,6 +216,8 @@ function entriesToText(entries) {
 
 function textToHtml(text) {
   return text
+    .replace(/\r\n/g, "\n")
+    .replace(/\r/g, "\n")
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
