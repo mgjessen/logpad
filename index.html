@@ -8,14 +8,21 @@
     <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png?v=7" />
     <link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png?v=7" />
     <link rel="apple-touch-icon" href="apple-touch-icon.png?v=7" />
-    <link rel="manifest" href="manifest.json" />
+    <link rel="manifest" href="manifest.json?v=2" />
     <meta name="apple-mobile-web-app-title" content="LogPad" />
-    <meta name="theme-color" content="#FF5500" />
     <script>
-      if (/Windows/i.test(navigator.userAgent || "")) {
-        var theme = document.querySelector('meta[name="theme-color"]');
-        if (theme) theme.remove();
-      }
+      (function () {
+        var data = navigator.userAgentData;
+        var windows =
+          /Windows/i.test(navigator.userAgent || "") ||
+          /Win/i.test(navigator.platform || "") ||
+          (data && /Windows/i.test(data.platform || ""));
+        if (windows) return;
+        var theme = document.createElement("meta");
+        theme.name = "theme-color";
+        theme.content = "#FF5500";
+        document.head.appendChild(theme);
+      })();
     </script>
     <link rel="stylesheet" href="styles.css?v=24" />
   </head>
