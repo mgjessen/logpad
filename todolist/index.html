@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>To Do List</title>
+    <link rel="icon" href="favicon.ico?v=1" sizes="any" />
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png?v=1" />
+    <link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png?v=1" />
+    <link rel="apple-touch-icon" href="apple-touch-icon.png?v=1" />
+    <link rel="manifest" href="manifest.json?v=1" />
+    <meta name="apple-mobile-web-app-title" content="To Do List" />
+    <script>
+      (function () {
+        var data = navigator.userAgentData;
+        var windows =
+          /Windows/i.test(navigator.userAgent || "") ||
+          /Win/i.test(navigator.platform || "") ||
+          (data && /Windows/i.test(data.platform || ""));
+        if (windows) return;
+        var theme = document.createElement("meta");
+        theme.name = "theme-color";
+        theme.content = "#FF5500";
+        document.head.appendChild(theme);
+      })();
+    </script>
+    <link rel="stylesheet" href="styles.css?v=1" />
+  </head>
+  <body>
+    <main class="app">
+      <header class="app-header">
+        <h1>To Do List</h1>
+        <div class="logo">
+          <img src="goose-head.png?v=1" alt="" />
+          <span class="mark">GEESE</span>
+        </div>
+      </header>
+
+      <section class="composer" aria-label="Add an item">
+        <input
+          id="editor"
+          class="editor"
+          type="text"
+          autocomplete="off"
+          aria-label="Add an item"
+          placeholder="Add an item…"
+        />
+
+        <div class="composer-actions">
+          <p id="edit-status" class="edit-status" hidden>Editing item</p>
+          <div class="action-buttons">
+            <button type="button" id="cancel-button" class="cancel-button" hidden>Cancel</button>
+            <button type="button" id="add-button" class="log-button" title="Add (Enter)">Add</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="log" aria-label="To do list">
+        <div class="log-header">
+          <div class="log-actions">
+            <div class="log-actions-start">
+              <button type="button" id="import-button" class="save-button">Import</button>
+              <button type="button" id="export-button" class="save-button" title="Download the list">
+                Export
+              </button>
+            </div>
+            <button type="button" id="clear-button" class="save-button clear-button">Clear</button>
+          </div>
+          <input id="import-input" type="file" accept=".txt,text/plain" hidden />
+        </div>
+        <div id="clear-warning" class="clear-warning" hidden>
+          <p>Delete every item? This cannot be undone.</p>
+          <div class="clear-warning-actions">
+            <button type="button" id="clear-cancel" class="save-button">Cancel</button>
+            <button type="button" id="clear-confirm" class="save-button clear-button">Delete all</button>
+          </div>
+        </div>
+        <p id="save-status" class="save-status" hidden></p>
+        <div class="log-scroll">
+          <ul id="todo-list" class="todo-list"></ul>
+          <p id="empty-state" class="empty-state">No items yet.</p>
+        </div>
+      </section>
+    </main>
+
+    <script src="app.js?v=1"></script>
+  </body>
+</html>
