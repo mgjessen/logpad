@@ -1,4 +1,5 @@
 const STORAGE_KEY = "todolist-items";
+const SORT_KEY = "todolist-sort";
 
 const editor = document.getElementById("editor");
 const addButton = document.getElementById("add-button");
@@ -11,11 +12,64 @@ const clearButton = document.getElementById("clear-button");
 const clearWarning = document.getElementById("clear-warning");
 const clearCancel = document.getElementById("clear-cancel");
 const clearConfirm = document.getElementById("clear-confirm");
+const sortButton = document.getElementById("sort-button");
 const saveStatus = document.getElementById("save-status");
 const todoList = document.getElementById("todo-list");
 const emptyState = document.getElementById("empty-state");
 
 let editingId = null;
+let drag = null;
+let ignoreTextClick = false;
+let sortMode = loadSortMode();
+
+function loadSortMode() {
+  const value = localStorage.getItem(SORT_KEY);
+  return value === "az" || value === "chrono" ? value : "";
+}
+
+function compareItems(a, b, mode) {
+  if (mode === "az") {
+    const byText = a.text.localeCompare(b.text, "nb", { sensitivity: "base", numeric: true });
+    if (byText !== 0) {
+      return byText;
+    }
+  }
+  return String(a.createdAt || "").localeCompare(String(b.createdAt || ""));
+}
+
+function sortedCopy(items, mode) {
+  const open = items.filter((item) => !item.done).sort((a, b) => compareItems(a, b, mode));
+  const done = items.filter((item) => item.done).sort((a, b) => compareItems(a, b, mode));
+  return [...open, ...done];
+}
+
+function updateSortButton() {
+  if (sortMode === "az") {
+    sortButton.textContent = "A-Z → Chrono";
+    sortButton.title = "Sorted A-Z. Switch to chronological";
+  } else if (sortMode === "chrono") {
+    sortButton.textContent = "Chrono → A-Z";
+    sortButton.title = "Sorted chronologically. Switch to A-Z";
+  } else {
+    sortButton.textContent = "A-Z";
+    sortButton.title = "Sort A-Z";
+  }
+  sortButton.setAttribute("aria-label", sortButton.title);
+}
+
+function setSortMode(mode) {
+  sortMode = mode === "az" || mode === "chrono" ? mode : "";
+  if (sortMode) {
+    localStorage.setItem(SORT_KEY, sortMode);
+  } else {
+    localStorage.removeItem(SORT_KEY);
+  }
+  updateSortButton();
+}
+
+function arranged(items) {
+  return sortMode ? sortedCopy(items, sortMode) : items;
+}
 
 function loadItems() {
   try {
@@ -69,8 +123,21 @@ function renderItems(items) {
       rowItem.classList.add("is-editing");
     }
 
+    rowItem.dataset.id = item.id;
+
     const row = document.createElement("div");
     row.className = "todo-row";
+
+    const handle = document.createElement("span");
+    handle.className = "todo-drag";
+    handle.setAttribute("role", "button");
+    handle.setAttribute("aria-label", `Drag "${item.text}" to reorder`);
+    rowItem.addEventListener("pointerdown", (event) => {
+      if (event.target.closest(".todo-check, .todo-delete")) {
+        return;
+      }
+      startDrag(event, item.id);
+    });
 
     const check = document.createElement("button");
     check.type = "button";
@@ -83,7 +150,13 @@ function renderItems(items) {
     text.type = "button";
     text.className = "todo-text";
     text.textContent = item.text;
-    text.addEventListener("click", () => beginEdit(item.id));
+    text.addEventListener("click", () => {
+      if (ignoreTextClick) {
+        ignoreTextClick = false;
+        return;
+      }
+      beginEdit(item.id);
+    });
 
     const remove = document.createElement("button");
     remove.type = "button";
@@ -92,7 +165,7 @@ function renderItems(items) {
     remove.setAttribute("aria-label", `Delete ${item.text}`);
     remove.addEventListener("click", () => deleteItem(item.id));
 
-    row.append(check, text, remove);
+    row.append(handle, check, text, remove);
     rowItem.append(row);
     todoList.append(rowItem);
   }
@@ -189,10 +262,19 @@ function exportList() {
 }
 
 function replaceList(items, message) {
+  setSortMode("");
   saveItems(items);
   endEdit();
   renderItems(items);
   showSaveStatus(message);
+}
+
+function toggleSort() {
+  const mode = sortMode === "az" ? "chrono" : "az";
+  const items = sortedCopy(withIds(loadItems()), mode);
+  setSortMode(mode);
+  saveItems(items);
+  renderItems(items);
 }
 
 function applyImportedList(text) {
@@ -216,13 +298,133 @@ function importListFile(file) {
 
 function toggleItem(id) {
   const items = withIds(loadItems());
-  const item = items.find((entry) => entry.id === id);
-  if (!item) {
+  const index = items.findIndex((entry) => entry.id === id);
+  if (index < 0) {
     return;
   }
+  const [item] = items.splice(index, 1);
   item.done = !item.done;
-  saveItems(items);
-  renderItems(items);
+  if (item.done) {
+    items.push(item);
+  } else {
+    const firstDone = items.findIndex((entry) => entry.done);
+    if (firstDone < 0) {
+      items.push(item);
+    } else {
+      items.splice(firstDone, 0, item);
+    }
+  }
+  const next = arranged(items);
+  saveItems(next);
+  renderItems(next);
+}
+
+function placeItem(items, id, toIndex) {
+  const from = items.findIndex((entry) => entry.id === id);
+  if (from < 0 || toIndex < 0 || toIndex >= items.length || from === toIndex) {
+    return false;
+  }
+  const [item] = items.splice(from, 1);
+  items.splice(toIndex, 0, item);
+  return true;
+}
+
+function syncDom(items) {
+  const byId = new Map([...todoList.children].map((el) => [el.dataset.id, el]));
+  const nodes = [];
+  for (const item of items) {
+    const node = byId.get(item.id);
+    if (!node) {
+      return;
+    }
+    nodes.push(node);
+  }
+  todoList.replaceChildren(...nodes);
+}
+
+function indexAtPoint(x, y) {
+  const els = [...todoList.querySelectorAll(".todo-item")];
+  if (els.length === 0) {
+    return 0;
+  }
+  let best = 0;
+  let bestDist = Infinity;
+  els.forEach((el, index) => {
+    const rect = el.getBoundingClientRect();
+    const dx = x - (rect.left + rect.width / 2);
+    const dy = y - (rect.top + rect.height / 2);
+    const dist = dx * dx + dy * dy;
+    if (dist < bestDist) {
+      bestDist = dist;
+      best = index;
+    }
+  });
+  return best;
+}
+
+function startDrag(event, id) {
+  if (event.button !== 0 || drag) {
+    return;
+  }
+  drag = {
+    pointerId: event.pointerId,
+    id,
+    items: withIds(loadItems()),
+    active: false,
+    startX: event.clientX,
+    startY: event.clientY,
+  };
+  try {
+    event.currentTarget.setPointerCapture(event.pointerId);
+  } catch {
+    // Pointer capture is unavailable for some synthetic events.
+  }
+}
+
+function onPointerMove(event) {
+  if (!drag || event.pointerId !== drag.pointerId) {
+    return;
+  }
+  const dx = event.clientX - drag.startX;
+  const dy = event.clientY - drag.startY;
+  if (!drag.active) {
+    if (dx * dx + dy * dy < 64) {
+      return;
+    }
+    drag.active = true;
+    const el = todoList.querySelector(`[data-id="${drag.id}"]`);
+    if (el) {
+      el.classList.add("is-dragging");
+    }
+  }
+  event.preventDefault();
+  const toIndex = indexAtPoint(event.clientX, event.clientY);
+  if (placeItem(drag.items, drag.id, toIndex)) {
+    syncDom(drag.items);
+  }
+  const scroller = document.querySelector(".log-scroll");
+  const bounds = scroller.getBoundingClientRect();
+  if (event.clientY < bounds.top + 28) {
+    scroller.scrollTop -= 16;
+  } else if (event.clientY > bounds.bottom - 28) {
+    scroller.scrollTop += 16;
+  }
+}
+
+function onPointerUp(event) {
+  if (!drag || event.pointerId !== drag.pointerId) {
+    return;
+  }
+  const el = todoList.querySelector(`[data-id="${drag.id}"]`);
+  if (el) {
+    el.classList.remove("is-dragging");
+  }
+  if (drag.active) {
+    setSortMode("");
+    saveItems(drag.items);
+    ignoreTextClick = true;
+  }
+  drag = null;
 }
 
 function deleteItem(id) {
@@ -309,9 +511,10 @@ function updateItem() {
   }
 
   item.text = text;
-  saveItems(items);
+  const next = arranged(items);
+  saveItems(next);
   endEdit();
-  renderItems(items);
+  renderItems(next);
   editor.focus();
 }
 
@@ -323,15 +526,22 @@ function addItem() {
   }
 
   const items = withIds(loadItems());
-  items.push({
+  const next = {
     id: crypto.randomUUID(),
     text,
     done: false,
     createdAt: new Date().toISOString(),
-  });
-  saveItems(items);
+  };
+  const firstDone = items.findIndex((entry) => entry.done);
+  if (firstDone < 0) {
+    items.push(next);
+  } else {
+    items.splice(firstDone, 0, next);
+  }
+  const ordered = arranged(items);
+  saveItems(ordered);
   endEdit();
-  renderItems(items);
+  renderItems(ordered);
   editor.focus();
 }
 
@@ -346,6 +556,8 @@ function submitItem() {
 addButton.addEventListener("click", submitItem);
 cancelButton.addEventListener("click", cancelEdit);
 exportButton.addEventListener("click", exportList);
+sortButton.addEventListener("click", toggleSort);
+updateSortButton();
 importButton.addEventListener("click", () => importInput.click());
 importInput.addEventListener("change", () => {
   const file = importInput.files?.[0];
@@ -381,5 +593,9 @@ document.addEventListener("keydown", (event) => {
     cancelEdit();
   }
 });
+
+document.addEventListener("pointermove", onPointerMove, { passive: false });
+document.addEventListener("pointerup", onPointerUp);
+document.addEventListener("pointercancel", onPointerUp);
 
 renderItems(withIds(loadItems()));
