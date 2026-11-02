@@ -1,6 +1,5 @@
 const STORAGE_KEY = "todolist-items";
 const SORT_KEY = "todolist-sort";
-const DONE_KEY = "todolist-done-place";
 
 const editor = document.getElementById("editor");
 const addButton = document.getElementById("add-button");
@@ -14,7 +13,6 @@ const clearWarning = document.getElementById("clear-warning");
 const clearCancel = document.getElementById("clear-cancel");
 const clearConfirm = document.getElementById("clear-confirm");
 const sortButton = document.getElementById("sort-button");
-const doneButton = document.getElementById("done-button");
 const saveStatus = document.getElementById("save-status");
 const todoList = document.getElementById("todo-list");
 const emptyState = document.getElementById("empty-state");
@@ -23,7 +21,6 @@ let editingId = null;
 let drag = null;
 let ignoreTextClick = false;
 let sortMode = loadSortMode();
-let donePlace = loadDonePlace();
 
 function loadSortMode() {
   const value = localStorage.getItem(SORT_KEY);
@@ -40,38 +37,10 @@ function compareItems(a, b, mode) {
   return String(a.createdAt || "").localeCompare(String(b.createdAt || ""));
 }
 
-function loadDonePlace() {
-  return localStorage.getItem(DONE_KEY) === "inline" ? "inline" : "bottom";
-}
-
-function sinkDone(items) {
-  return [...items.filter((item) => !item.done), ...items.filter((item) => item.done)];
-}
-
 function sortedCopy(items, mode) {
-  if (donePlace === "inline") {
-    return [...items].sort((a, b) => compareItems(a, b, mode));
-  }
   const open = items.filter((item) => !item.done).sort((a, b) => compareItems(a, b, mode));
   const done = items.filter((item) => item.done).sort((a, b) => compareItems(a, b, mode));
   return [...open, ...done];
-}
-
-function updateDoneButton() {
-  if (donePlace === "inline") {
-    doneButton.textContent = "Done ~ → Done ↓";
-    doneButton.title = "Done items stay where they are. Move them to the bottom";
-  } else {
-    doneButton.textContent = "Done ↓ → Done ~";
-    doneButton.title = "Done items stay at the bottom. Leave them in place";
-  }
-  doneButton.setAttribute("aria-label", doneButton.title);
-}
-
-function setDonePlace(place) {
-  donePlace = place === "inline" ? "inline" : "bottom";
-  localStorage.setItem(DONE_KEY, donePlace);
-  updateDoneButton();
 }
 
 function updateSortButton() {
@@ -294,23 +263,10 @@ function exportList() {
 
 function replaceList(items, message) {
   setSortMode("");
-  const next = donePlace === "bottom" ? sinkDone(items) : items;
-  saveItems(next);
+  saveItems(items);
   endEdit();
-  renderItems(next);
+  renderItems(items);
   showSaveStatus(message);
-}
-
-function toggleDonePlace() {
-  if (donePlace === "bottom") {
-    setDonePlace("inline");
-    return;
-  }
-  setDonePlace("bottom");
-  const items = withIds(loadItems());
-  const next = sortMode ? sortedCopy(items, sortMode) : sinkDone(items);
-  saveItems(next);
-  renderItems(next);
 }
 
 function toggleSort() {
@@ -346,19 +302,16 @@ function toggleItem(id) {
   if (index < 0) {
     return;
   }
-  const item = items[index];
+  const [item] = items.splice(index, 1);
   item.done = !item.done;
-  if (donePlace === "bottom" && !sortMode) {
-    items.splice(index, 1);
-    if (item.done) {
+  if (item.done) {
+    items.push(item);
+  } else {
+    const firstDone = items.findIndex((entry) => entry.done);
+    if (firstDone < 0) {
       items.push(item);
     } else {
-      const firstDone = items.findIndex((entry) => entry.done);
-      if (firstDone < 0) {
-        items.push(item);
-      } else {
-        items.splice(firstDone, 0, item);
-      }
+      items.splice(firstDone, 0, item);
     }
   }
   const next = arranged(items);
@@ -579,15 +532,11 @@ function addItem() {
     done: false,
     createdAt: new Date().toISOString(),
   };
-  if (donePlace === "bottom") {
-    const firstDone = items.findIndex((entry) => entry.done);
-    if (firstDone < 0) {
-      items.push(next);
-    } else {
-      items.splice(firstDone, 0, next);
-    }
-  } else {
+  const firstDone = items.findIndex((entry) => entry.done);
+  if (firstDone < 0) {
     items.push(next);
+  } else {
+    items.splice(firstDone, 0, next);
   }
   const ordered = arranged(items);
   saveItems(ordered);
@@ -608,9 +557,7 @@ addButton.addEventListener("click", submitItem);
 cancelButton.addEventListener("click", cancelEdit);
 exportButton.addEventListener("click", exportList);
 sortButton.addEventListener("click", toggleSort);
-doneButton.addEventListener("click", toggleDonePlace);
 updateSortButton();
-updateDoneButton();
 importButton.addEventListener("click", () => importInput.click());
 importInput.addEventListener("change", () => {
   const file = importInput.files?.[0];
