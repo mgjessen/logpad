@@ -17,7 +17,23 @@
           /Windows/i.test(navigator.userAgent || "") ||
           /Win/i.test(navigator.platform || "") ||
           (data && /Windows/i.test(data.platform || ""));
-        if (windows) return;
+        if (windows) {
+          var dark = document.createElement("meta");
+          dark.name = "theme-color";
+          dark.media = "(prefers-color-scheme: dark)";
+          dark.content = "#1c1c1e";
+          var light = document.createElement("meta");
+          light.name = "theme-color";
+          light.media = "(prefers-color-scheme: light)";
+          light.content = "#f5f5f7";
+          var fallback = document.createElement("meta");
+          fallback.name = "theme-color";
+          fallback.content = "#f5f5f7";
+          document.head.appendChild(dark);
+          document.head.appendChild(light);
+          document.head.appendChild(fallback);
+          return;
+        }
         var theme = document.createElement("meta");
         theme.name = "theme-color";
         theme.content = "#FF5500";
