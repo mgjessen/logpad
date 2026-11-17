@@ -41,7 +41,7 @@ body {
   overflow: hidden;
   background: var(--bg);
   color: var(--text);
-  font-size: 15px;
+  font-size: 12px;
   line-height: 1.47;
 }
 
@@ -66,7 +66,7 @@ button,
   align-items: center;
   justify-content: flex-end;
   height: 0.95em;
-  font-size: clamp(2.4rem, 1.2rem + 4vw, 4.2rem);
+  font-size: clamp(1.92rem, 0.96rem + 3.2vw, 3.36rem);
 }
 
 .logo img {
@@ -99,7 +99,7 @@ h1 {
   margin: 0;
   min-width: 0;
   color: #222222;
-  font-size: clamp(2.4rem, 1.2rem + 4vw, 4.2rem);
+  font-size: clamp(1.92rem, 0.96rem + 3.2vw, 3.36rem);
   font-weight: 600;
   letter-spacing: -0.045em;
   line-height: 0.95;
@@ -154,7 +154,7 @@ h1 {
 .edit-status {
   margin: 0;
   color: var(--accent);
-  font-size: 0.8125rem;
+  font-size: 0.65rem;
   font-weight: 500;
 }
 
@@ -164,7 +164,7 @@ h1 {
   border: 0;
   border-radius: 6px;
   cursor: pointer;
-  font-size: 0.8125rem;
+  font-size: 0.65rem;
   font-weight: 500;
   min-height: 1.75rem;
   padding: 0.25rem 0.75rem;
@@ -246,7 +246,7 @@ h1 {
 
 .clear-warning p {
   margin: 0;
-  font-size: 0.8125rem;
+  font-size: 0.65rem;
 }
 
 .clear-warning-actions {
@@ -280,7 +280,7 @@ h1 {
 .save-status {
   flex: none;
   margin: 0 0 0.65rem;
-  font-size: 0.8125rem;
+  font-size: 0.65rem;
   color: var(--muted);
 }
 
@@ -365,7 +365,7 @@ h1 {
   flex: none;
   border: 0;
   background: transparent;
-  font-size: 0.75rem;
+  font-size: 0.6rem;
   font-weight: 500;
   line-height: 1.47;
   cursor: pointer;
@@ -375,7 +375,7 @@ h1 {
 .empty-state {
   margin: 0;
   color: var(--muted);
-  font-size: 0.875rem;
+  font-size: 0.7rem;
 }
 
 .empty-state[hidden] {
